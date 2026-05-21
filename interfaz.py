@@ -1,6 +1,7 @@
 from tkinter import *
-from tkinter import messagebox
-from logica import agregarRegistro, eliminarRegistro, generarGrafico
+from tkinter import messagebox, ttk
+from logica import agregarRegistro, eliminarRegistro, generarGrafico, df
+import logica
 
 # VENTANA
 ventana = Tk()
@@ -197,46 +198,101 @@ def pantallaEliminar():
         font=("Arial", 22, "bold"),
         bg="#0f172a",
         fg="white"
-    ).pack(pady=30)
+    ).pack(pady=15)
 
-    frame = Frame(ventana, bg="#1e293b", padx=30, pady=30)
-    frame.pack()
+    # ---- TABLA DE REGISTROS ----
+    frameTabla = Frame(ventana, bg="#0f172a")
+    frameTabla.pack(padx=20, pady=10, fill="both", expand=True)
+
+    columnas = ("ID", "Producto", "Cantidad", "Precio", "Fecha", "Empleado", "ID Emp.")
+
+    style = ttk.Style()
+    style.theme_use("clam")
+    style.configure(
+        "Inventario.Treeview",
+        background="#1e293b",
+        foreground="white",
+        fieldbackground="#1e293b",
+        rowheight=24,
+        font=("Arial", 10)
+    )
+    style.configure(
+        "Inventario.Treeview.Heading",
+        background="#3b82f6",
+        foreground="white",
+        font=("Arial", 10, "bold")
+    )
+    style.map("Inventario.Treeview", background=[("selected", "#ef4444")])
+
+    tabla = ttk.Treeview(
+        frameTabla,
+        columns=columnas,
+        show="headings",
+        style="Inventario.Treeview",
+        height=8
+    )
+
+    anchos = [50, 150, 80, 80, 100, 120, 70]
+    for col, ancho in zip(columnas, anchos):
+        tabla.heading(col, text=col)
+        tabla.column(col, width=ancho, anchor="center")
+
+    scrollbar = Scrollbar(frameTabla, orient="vertical", command=tabla.yview)
+    tabla.configure(yscrollcommand=scrollbar.set)
+    tabla.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    def cargarTabla():
+        for fila in tabla.get_children():
+            tabla.delete(fila)
+        for _, row in logica.df.iterrows():
+            tabla.insert("", "end", values=(
+                row["Idregistro"],
+                row["nombreProducto"],
+                row["cantidad"],
+                row["precioUnidad"],
+                row["fechaIngreso"],
+                row["empleado"],
+                row["Idempleado"]
+            ))
+
+    cargarTabla()
+
+    # CAMPO ID + BOTONES 
+    frameAccion = Frame(ventana, bg="#1e293b", padx=20, pady=15)
+    frameAccion.pack(fill="x", padx=20, pady=10)
 
     Label(
-        frame,
-        text="🆔 ID del Registro",
+        frameAccion,
+        text="🆔 ID del Registro a eliminar:",
         font=("Arial", 11, "bold"),
         bg="#1e293b",
         fg="white"
-    ).pack()
+    ).pack(side="left", padx=(0, 10))
 
-    txtEliminar = Entry(frame, width=30, font=("Arial", 11))
-    txtEliminar.pack(ipady=5, pady=10)
+    txtEliminar = Entry(frameAccion, width=10, font=("Arial", 11))
+    txtEliminar.pack(side="left", ipady=5)
 
-    # ELIMINAR
     def eliminar():
-
         mensaje = eliminarRegistro(txtEliminar.get())
-
         if mensaje == "Registro eliminado correctamente":
             messagebox.showinfo("Correcto", mensaje)
             txtEliminar.delete(0, END)
-
+            cargarTabla()
         else:
             messagebox.showerror("Error", mensaje)
 
-    # BOTON ELIMINAR
     Button(
-        frame,
+        frameAccion,
         text="Eliminar",
         command=eliminar,
         bg="#ef4444",
         fg="white",
-        width=20,
-        height=2,
+        width=12,
+        height=1,
         font=("Arial", 11, "bold"),
         bd=0
-    ).pack(pady=20)
+    ).pack(side="left", padx=15)
 
     # VOLVER
     Button(
@@ -248,7 +304,7 @@ def pantallaEliminar():
         width=20,
         height=2,
         bd=0
-    ).pack(pady=10)
+    ).pack(side="bottom", pady=15)
 
 
 # INICIAR MENU
